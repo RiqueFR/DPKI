@@ -1,6 +1,7 @@
 import base64
 
 from cryptography import x509
+from cryptography.exceptions import InvalidSignature
 
 
 def check_certificate_valid(signed_certificate):
@@ -19,5 +20,5 @@ def check_certificate_valid(signed_certificate):
     try:
         public_key.verify(signature, tbs_certificate_bytes, padding, hash_alg)
         return True
-    except Exception:
+    except InvalidSignature:
         return False
