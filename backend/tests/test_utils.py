@@ -16,6 +16,6 @@ def test_corrupted_signed_cert_return_false():
 
 def test_invalid_signed_cert_return_false():
     valid_cert_data = None
-    with open("tests/invalid_cert2.pem", "rb") as valid_cert_file:
+    with open("tests/invalid_signed_cert2.pem", "rb") as valid_cert_file:
         valid_cert_data = valid_cert_file.read()
     assert check_certificate_valid(valid_cert_data) is False

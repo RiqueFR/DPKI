@@ -1,6 +1,7 @@
 import base64
 
 from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
 
 
@@ -15,10 +16,14 @@ def check_certificate_valid(signed_certificate):
     signature = cert.signature
     tbs_certificate_bytes = cert.tbs_certificate_bytes
     hash_alg = cert.signature_hash_algorithm
-    padding = cert.signature_algorithm_parameters
+    cert_padding = padding.PKCS1v15()
+    try:
+        cert_padding = cert.signature_algorithm_parameters
+    except AttributeError:
+        pass
 
     try:
-        public_key.verify(signature, tbs_certificate_bytes, padding, hash_alg)
+        public_key.verify(signature, tbs_certificate_bytes, cert_padding, hash_alg)
         return True
     except InvalidSignature:
         return False
