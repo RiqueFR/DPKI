@@ -1,14 +1,17 @@
-import base64
+"""Module used to create functions that help main program"""
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
 
-def check_certificate_valid(certificate):
+def check_certificate_valid(certificate: x509.Certificate, signature: bytes):
+    """
+    Receives a x509 Certificate and check if signature was signed with the same private key that
+    created certificate.
+    Return True if certificate was correctly signed, and False if not.
+    """
     public_key = certificate.public_key()
-    signature = certificate.signature
     certificate_bytes = certificate.tbs_certificate_bytes
 
     hash_alg = certificate.signature_hash_algorithm
