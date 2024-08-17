@@ -3,12 +3,16 @@ import traceback
 import logging
 import requests
 from py_expression_eval import Parser
+import backend.utils
+import sqlite3
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
 
 rollup_server = environ["ROLLUP_HTTP_SERVER_URL"]
 logger.info(f"HTTP rollup_server url is {rollup_server}")
+
+create_table()
 
 def hex2str(hex):
     """
@@ -38,6 +42,8 @@ def handle_advance(data):
         logger.info(f"Adding notice with payload: '{output}'")
         response = requests.post(rollup_server + "/notice", json={"payload": str2hex(str(output))})
         logger.info(f"Received notice status {response.status_code} body {response.content}")
+        if response.status_code == 201
+            add_user_certificate(output.user_id, output.certificate)
 
     except Exception as e:
         status = "reject"
@@ -51,9 +57,16 @@ def handle_advance(data):
 def handle_inspect(data):
     logger.info(f"Received inspect request data {data}")
     logger.info("Adding report")
+
+    user_id = hex2str(data["payload"])
+    get_certificate_by_user(user_id)
     response = requests.post(rollup_server + "/report", json={"payload": data["payload"]})
+    logger.info(f"response received from report {response}")
+    logger.info(f"response received from report {response.content}")
+
     logger.info(f"Received report status {response.status_code}")
     return "accept"
+
 
 handlers = {
     "advance_state": handle_advance,
