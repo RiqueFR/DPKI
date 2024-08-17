@@ -6,19 +6,25 @@ import datetime
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.x509.oid import NameOID
 
-from backend.utils import check_certificate_valid
+from backend.utils import cert_hash, check_signature_belongs_to_certificate_valid
 
 
 def test_valid_signed_cert_return_true():
     valid_cert_data = None
-    with open("tests/signed_cert1.pem", "rb") as valid_cert_file:
+    with open("tests/signed_cert1_2.pem", "rb") as valid_cert_file:
         valid_cert_data = valid_cert_file.read()
     cert = x509.load_pem_x509_certificate(valid_cert_data)
-    assert check_certificate_valid(cert, cert.signature) is True
+    cert_hash_value = cert_hash(cert)
+    assert (
+        check_signature_belongs_to_certificate_valid(
+            cert_hash_value, cert.public_key(), cert.signature
+        )
+        is True
+    )
 
 
 def test_corrupted_signed_cert_return_false():
@@ -28,7 +34,13 @@ def test_corrupted_signed_cert_return_false():
     cert = None
     try:
         cert = x509.load_pem_x509_certificate(valid_cert_data)
-        assert check_certificate_valid(cert, cert.signature) is False
+        cert_hash_value = cert_hash(cert)
+        assert (
+            check_signature_belongs_to_certificate_valid(
+                cert_hash_value, cert.public_key(), cert.signature
+            )
+            is False
+        )
     except ValueError:
         pass
     # it shows that certificate failed to load because its corrupted
@@ -66,5 +78,31 @@ def test_invalid_signed_cert_return_false():
         )
         .sign(sign_private_key, hashes.SHA256(), default_backend())
     )
+    cert_hash_value = cert_hash(cert)
 
-    assert check_certificate_valid(cert, cert.signature) is False
+    assert (
+        check_signature_belongs_to_certificate_valid(
+            cert_hash_value, cert.public_key(), cert.signature
+        )
+        is False
+    )
+
+
+def test_able_to_verify_message_signature():
+    pubkey_data = None
+    with open("tests/public_key1.pem", "rb") as pubkey_file:
+        pubkey_data = pubkey_file.read()
+    public_key = serialization.load_pem_public_key(pubkey_data)
+
+    privkey_data = None
+    with open("tests/privkey1.pem", "rb") as privkey_file:
+        privkey_data = privkey_file.read()
+    private_key = serialization.load_pem_private_key(privkey_data, password=None)
+    message = b"Hello World!"
+
+    signature = private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())
+
+    assert (
+        check_signature_belongs_to_certificate_valid(message, public_key, signature)
+        is True
+    )

@@ -2,27 +2,28 @@
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 
-def check_certificate_valid(certificate: x509.Certificate, signature: bytes):
+def cert_hash(cert: x509.Certificate):
+    """Return certificate hash to compare with signature"""
+    return cert.tbs_certificate_bytes
+
+
+def check_signature_belongs_to_certificate_valid(
+    message: bytes, public_key: rsa.RSAPublicKey, signature: bytes
+):
     """
     Receives a x509 Certificate and check if signature was signed with the same private key that
     created certificate.
     Return True if certificate was correctly signed, and False if not.
     """
-    public_key = certificate.public_key()
-    certificate_bytes = certificate.tbs_certificate_bytes
-
-    hash_alg = certificate.signature_hash_algorithm
-    cert_padding = padding.PKCS1v15()
-    try:
-        cert_padding = certificate.signature_algorithm_parameters
-    except AttributeError:
-        pass
+    hash_alg = hashes.SHA256()
+    signature_padding = padding.PKCS1v15()
 
     try:
-        public_key.verify(signature, certificate_bytes, cert_padding, hash_alg)
+        public_key.verify(signature, message, signature_padding, hash_alg)
         return True
     except InvalidSignature:
         return False
