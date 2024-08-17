@@ -15,6 +15,7 @@ set -e
 apt-get update
 apt-get install -y --no-install-recommends \
   busybox-static=1:1.30.1-7ubuntu3
+apt install -y gcc libffi-dev rustc cargo
 rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
 useradd --create-home --user-group dapp
 EOF
@@ -26,6 +27,7 @@ COPY ./requirements.txt .
 
 RUN <<EOF
 set -e
+pip install --upgrade pip
 pip install -r requirements.txt --no-cache
 find /usr/local/lib -type d -name __pycache__ -exec rm -r {} +
 EOF
