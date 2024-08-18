@@ -15,7 +15,7 @@ set -e
 apt-get update
 apt-get install -y --no-install-recommends \
   busybox-static=1:1.30.1-7ubuntu3
-apt install -y gcc libffi-dev rustc cargo
+apt install -y gcc libffi-dev rustc cargo openssl libssl-dev pkg-config python3 python3-pip
 rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
 useradd --create-home --user-group dapp
 EOF
@@ -33,6 +33,7 @@ find /usr/local/lib -type d -name __pycache__ -exec rm -r {} +
 EOF
 
 COPY ./dapp.py .
+COPY ./utils.py .
 
 ENV ROLLUP_HTTP_SERVER_URL="http://127.0.0.1:5004"
 
