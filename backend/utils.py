@@ -1,9 +1,30 @@
 """Module used to create functions that help main program"""
 
+import json
+
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+
+def dict_to_bytes(dict_data: dict):
+    """Convert python dict to bytes"""
+    json_str = json.dumps(dict_data)
+    return json_str.encode()
+
+
+def sign_message(message: bytes, private_key_path: str, signature_out_path: str):
+    """Save signed message to signature_out_path"""
+    privkey_data = None
+    with open(private_key_path, "rb") as privkey_file:
+        privkey_data = privkey_file.read()
+    private_key = serialization.load_pem_private_key(privkey_data, password=None)
+
+    signature = private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())
+
+    with open(signature_out_path, "wb") as signature_file:
+        signature_file.write(signature)
 
 
 def cert_hash(cert: x509.Certificate):
