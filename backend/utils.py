@@ -1,11 +1,51 @@
 """Module used to create functions that help main program"""
 
 import json
+import os
+import sqlite3
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+
+table_name = "user_certificates"
+
+con = sqlite3.connect("data.db")
+cur = con.cursor()
+
+
+def get_certificate_by_user(user_id: str):
+    try:
+        cur.execute(f"SELECT * FROM {table_name} WHERE user_id = '{user_id}'")
+        return True
+    except Exception as e:
+        return False
+
+
+def delete_table():
+    try:
+        cur.execute(f"DROP TABLE {table_name}")
+        return True
+    except Exception as e:
+        return False
+
+
+def add_user_certificate(user_id: str, certificate: x509.Certificate):
+    public_key = certificate.public_key()
+    public_key_hex = public_key.public_bytes(
+        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+    ).hex()
+    certificate_hex = certificate.public_bytes(serialization.Encoding.PEM).hex()
+    due_date = certificate.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        cur.execute(
+            f"INSERT INTO {table_name} VALUES ({user_id}, {certificate_hex}, true, {public_key_hex}, {due_date})"
+        )
+        return True
+    except Exception as e:
+        return False
 
 
 def dict_to_bytes(dict_data: dict):

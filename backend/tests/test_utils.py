@@ -10,7 +10,12 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.x509.oid import NameOID
 
-from backend.utils import cert_hash, check_signature_belongs_to_certificate_valid
+from backend.utils import (
+    cert_hash,
+    check_signature_belongs_to_certificate_valid,
+    add_user_certificate,
+    get_certificate_by_user,
+)
 
 
 def test_valid_signed_cert_return_true():
@@ -106,3 +111,13 @@ def test_able_to_verify_message_signature():
         check_signature_belongs_to_certificate_valid(message, public_key, signature)
         is True
     )
+
+
+def test_db_execution_flow():
+    valid_cert_data = None
+    with open("tests/signed_cert1.pem", "rb") as valid_cert_file:
+        valid_cert_data = valid_cert_file.read()
+    cert = x509.load_pem_x509_certificate(valid_cert_data)
+    add_user_certificate("iago123", cert)
+    cert = get_certificate_by_user("iago123")
+    assert cert is not None and cert is not False
