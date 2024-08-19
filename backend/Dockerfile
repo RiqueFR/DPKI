@@ -35,7 +35,9 @@ EOF
 
 COPY ./dapp.py .
 COPY ./utils.py .
+COPY ./db_handler.py .
 COPY ./create_db.sql .
+
 RUN <<EOF
 cat create_db.sql | sqlite3 data.db
 chmod 777 ./data.db

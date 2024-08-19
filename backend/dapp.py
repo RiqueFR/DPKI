@@ -1,6 +1,5 @@
 import json
 import logging
-import sqlite3
 import traceback
 from os import environ
 
@@ -11,10 +10,9 @@ from cryptography.hazmat.primitives import serialization
 from utils import (
     add_user_certificate,
     check_signature_belongs_to_certificate_valid,
-    create_table,
     dict_to_bytes,
-    get_certificate_by_user,
 )
+from db_handler import DB
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
@@ -22,7 +20,7 @@ logger = logging.getLogger(__name__)
 rollup_server = environ["ROLLUP_HTTP_SERVER_URL"]
 logger.info(f"HTTP rollup_server url is {rollup_server}")
 
-create_table()
+db = DB()
 
 
 def hex2str(hex):
@@ -105,7 +103,7 @@ def handle_advance(data):
             logger.info("Valid input, creating data")
 
             # add to database
-            add_user_certificate(common_name, certificate)
+            add_user_certificate(db, common_name, certificate)
 
             # set output to the blockchain
             output = {
@@ -151,7 +149,7 @@ def handle_inspect(data):
     logger.info("Adding report")
 
     user_id = hex2str(data["payload"])
-    get_certificate_by_user(user_id)
+    db.get_certificate_by_user(user_id)
     response = requests.post(
         rollup_server + "/report", json={"payload": data["payload"]}
     )
