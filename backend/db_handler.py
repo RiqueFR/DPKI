@@ -10,12 +10,13 @@ class DB:
 
     def get_certificate_by_user(self, user_id: str):
         try:
-            self.cur.execute(
-                f"SELECT * FROM {self.TABLE_NAME} WHERE user_id = '{user_id}'"
+            res = self.cur.execute(
+                f"SELECT * FROM {self.TABLE_NAME} WHERE user_id MATCH '{user_id}'"
             )
-            return True
-        except Exception as e:
-            return False
+            records = res.fetchone()
+            return records
+        except Exception:
+            return None
 
     def delete_table(self):
         try:
@@ -28,9 +29,11 @@ class DB:
         self, user_id: str, certificate_hex: str, public_key_hex: str, due_date: str
     ):
         try:
+            data = (user_id, certificate_hex, True, public_key_hex, due_date)
             self.cur.execute(
-                f"INSERT INTO {self.TABLE_NAME} VALUES ({user_id}, {certificate_hex}, true, {public_key_hex}, {due_date})"
+                f"INSERT INTO {self.TABLE_NAME} VALUES(?, ?, ?, ?, ?)", data
             )
+            self.con.commit()
             return True
-        except Exception as e:
+        except Exception:
             return False

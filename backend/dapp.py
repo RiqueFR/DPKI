@@ -85,7 +85,7 @@ def handle_advance(data):
             due_date = cert.not_valid_after_utc
             due_date_str = (due_date.strftime("%Y-%m-%d %H:%M:%S"),)
 
-            if get_certificate_by_user(common_name):
+            if db.get_certificate_by_user(common_name):
                 raise Exception("Certificate with this Common Name already registered")
 
             # check certificate is valid
@@ -103,7 +103,7 @@ def handle_advance(data):
             logger.info("Valid input, creating data")
 
             # add to database
-            add_user_certificate(db, common_name, certificate)
+            add_user_certificate(db, common_name, cert)
 
             # set output to the blockchain
             output = {
