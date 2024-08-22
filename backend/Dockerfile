@@ -41,6 +41,7 @@ COPY ./create_db.sql .
 RUN <<EOF
 cat create_db.sql | sqlite3 data.db
 chmod 777 ./data.db
+chown -R dapp:dapp /opt/cartesi/dapp
 EOF
 
 ENV ROLLUP_HTTP_SERVER_URL="http://127.0.0.1:5004"

@@ -11,7 +11,7 @@ class DB:
     def get_certificate_by_user(self, user_id: str):
         try:
             res = self.cur.execute(
-                f"SELECT * FROM {self.TABLE_NAME} WHERE user_id MATCH '{user_id}'"
+                f"SELECT * FROM {self.TABLE_NAME} WHERE user_id = '{user_id}'"
             )
             records = res.fetchone()
             return records
@@ -35,5 +35,6 @@ class DB:
             )
             self.con.commit()
             return True
-        except Exception:
+        except Exception as e:
+            print(e)
             return False
