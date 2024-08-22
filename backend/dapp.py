@@ -103,7 +103,8 @@ def handle_advance(data):
             logger.info("Valid input, creating data")
 
             # add to database
-            add_user_certificate(db, common_name, cert)
+            if not add_user_certificate(db, common_name, cert):
+                raise Exception("Failed to add certificate to database")
 
             # set output to the blockchain
             output = {
@@ -149,10 +150,11 @@ def handle_inspect(data):
     logger.info("Adding report")
 
     user_id = hex2str(data["payload"])
-    db.get_certificate_by_user(user_id)
+    cert = db.get_certificate_by_user(user_id)
     response = requests.post(
-        rollup_server + "/report", json={"payload": data["payload"]}
+        rollup_server + "/report", json={"payload": "0x" + cert[1]}
     )
+
     logger.info(f"response received from report {response}")
     logger.info(f"response received from report {response.content}")
 
