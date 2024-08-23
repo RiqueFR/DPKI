@@ -4,6 +4,7 @@ import json
 import os
 import sqlite3
 
+
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
@@ -20,6 +21,10 @@ def add_user_certificate(db: DB, user_id: str, certificate: x509.Certificate):
     certificate_hex = certificate.public_bytes(serialization.Encoding.PEM).hex()
     due_date = certificate.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%S")
     return db.add_user_certificate(user_id, certificate_hex, public_key_hex, due_date)
+
+
+def update_certificate_status(db: DB, user_id: str, cert_new_status: bool):
+    return db.update_certificate_status(user_id, cert_new_status)
 
 
 def dict_to_bytes(dict_data: dict):

@@ -11,6 +11,7 @@ from utils import (
     add_user_certificate,
     check_signature_belongs_to_certificate_valid,
     dict_to_bytes,
+    update_certificate_status,
 )
 from db_handler import DB
 
@@ -115,7 +116,60 @@ def handle_advance(data):
                 "dueDate": due_date_str,
             }
         elif operation == "revoke":
-            pass
+            if "signature" not in input_json:
+                raise Exception(
+                    "Bad formated json input, revoke operation require a signature"
+                )
+            if "name" not in input_json:
+                raise Exception(
+                    "Bad formated json input, revoke operation require a name"
+                )
+
+            signature_hex = input_json["signature"]
+            signature = bytes.fromhex(signature_hex)
+
+            user_id = input_json["name"]
+            user = db.get_certificate_by_user(user_id)
+
+            if user is None:
+                raise Exception("User not found, unable to revoke key")
+
+            user_cert_hex = user[1]
+
+            certificate = bytes.fromhex(user_cert_hex)
+            cert = x509.load_pem_x509_certificate(certificate)
+
+            public_key = cert.public_key()
+            common_name = cert.subject.get_attributes_for_oid(
+                x509.oid.NameOID.COMMON_NAME
+            )[0].value
+            public_key_hex = public_key.public_bytes(
+                serialization.Encoding.PEM,
+                serialization.PublicFormat.SubjectPublicKeyInfo,
+            ).hex()
+
+            message = dict_to_bytes({"operation": "revoke", "name": user_id})
+
+            # check signature is valid
+            if not check_signature_belongs_to_certificate_valid(
+                message, public_key, signature
+            ):
+                raise Exception("Invalid signature")
+
+            # update certificate activity
+            if not update_certificate_status(False, user_id):
+                raise Exception("Revoke Failed")
+
+            logger.info("Revoked Certificate")
+
+            # set output to the blockchain
+            output = {
+                "userId": common_name,
+                "certificate": user_cert_hex,
+                "publicKey": public_key_hex,
+                "active": False,
+                "dueDate": cert.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%S"),
+            }
         else:
             raise Exception(
                 "Operation does not exist, use only create or revoke operations"
