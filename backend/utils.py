@@ -1,62 +1,49 @@
 """Module used to create functions that help main program"""
-import json
 
+import json
+import os
 import sqlite3
+
+from datetime import datetime
+
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
-table_name = "user_certificates"
+from db_handler import DB
 
-con = sqlite3.connect("data.db")
-cur = con.cursor()
+def add_user_certificate(db: DB, user_id: str, certificate: x509.Certificate):
+    public_key = certificate.public_key()
+    public_key_hex = public_key.public_bytes(
+        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+    ).hex()
+    certificate_hex = certificate.public_bytes(serialization.Encoding.PEM).hex()
+    due_date = certificate.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%S")
+    return db.add_user_certificate(user_id, certificate_hex, public_key_hex, due_date)
+    
+def update_certificate_status(db: DB, user_id: str, cert_new_status: bool):
+    new_due_date = datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S")
+    return db.update_certificate_status(user_id, cert_new_status, new_due_date)
+
 
 def dict_to_bytes(dict_data: dict):
     """Convert python dict to bytes"""
     json_str = json.dumps(dict_data)
     return json_str.encode()
 
-def create_table():
-    cur.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (user_id varchar(200), certificate varchar(1800), active bool, public_key varchar(200), due_data date)")
 
-def get_certificate_by_user(user_id: str):
-    try:
-        cur.execute(f"SELECT * FROM {table_name} WHERE user_id = '{user_id}'")
-        row = cur.fetchone()
-        return row
-    except Exception as e:
-        return False
+def sign_message(message: bytes, private_key_path: str, signature_out_path: str):
+    """Save signed message to signature_out_path"""
+    privkey_data = None
+    with open(private_key_path, "rb") as privkey_file:
+        privkey_data = privkey_file.read()
+    private_key = serialization.load_pem_private_key(privkey_data, password=None)
 
-def delete_table():
-    try:
-        cur.execute(f"DROP TABLE {table_name}")
-        return True
-    except Exception as e:
-        return False
+    signature = private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())
 
-def add_user_certificate(user_id: str, certificate: str):
-    try:
-        pub_key = get_certificate_pubkey(certificate)
-        cur.execute(f"INSERT INTO {table_name} VALUES ({user_id}, {certificate}, true, {pub_key})")
-        return True
-    except Exception as e:
-        return False
-    
-def update_certificate_status(cert_new_status: bool, user_id: str):
-    try:
-        sql = 'UPDATE table_name SET active = ? WHERE user_id = ?'
-        cur.execute(sql, (cert_new_status, user_id))
-        return True
-    except:
-        return False
-
-def get_certificate_pubkey(cert: str):
-    try:
-        cert = x509.load_pem_x509_certificate(cert)
-        return cert.public_key()
-    except Exception as e:
-        return None
+    with open(signature_out_path, "wb") as signature_file:
+        signature_file.write(signature)
 
 
 def cert_hash(cert: x509.Certificate):

@@ -6,7 +6,7 @@ ADD https://github.com/cartesi/machine-emulator-tools/releases/download/v${MACHI
 RUN dpkg -i /machine-emulator-tools-v${MACHINE_EMULATOR_TOOLS_VERSION}.deb \
   && rm /machine-emulator-tools-v${MACHINE_EMULATOR_TOOLS_VERSION}.deb
 
-LABEL io.cartesi.rollups.sdk_version=0.6.0
+LABEL io.cartesi.rollups.sdk_version=0.9.0
 LABEL io.cartesi.rollups.ram_size=128Mi
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -15,7 +15,7 @@ set -e
 apt-get update
 apt-get install -y --no-install-recommends \
   busybox-static=1:1.30.1-7ubuntu3
-apt install -y gcc libffi-dev rustc cargo openssl libssl-dev pkg-config python3 python3-pip
+apt install -y gcc libffi-dev rustc cargo openssl libssl-dev pkg-config python3 python3-pip sqlite3
 rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
 useradd --create-home --user-group dapp
 EOF
@@ -28,12 +28,21 @@ COPY ./requirements.txt .
 RUN <<EOF
 set -e
 pip install --upgrade pip
-pip install -r requirements.txt --no-cache
-find /usr/local/lib -type d -name __pycache__ -exec rm -r {} +
+pip install -r requirements.txt
+# --no-cache
+#find /usr/local/lib -type d -name __pycache__ -exec rm -r {} +
 EOF
 
 COPY ./dapp.py .
 COPY ./utils.py .
+COPY ./db_handler.py .
+COPY ./create_db.sql .
+
+RUN <<EOF
+cat create_db.sql | sqlite3 data.db
+chmod 777 ./data.db
+chown -R dapp:dapp /opt/cartesi/dapp
+EOF
 
 ENV ROLLUP_HTTP_SERVER_URL="http://127.0.0.1:5004"
 

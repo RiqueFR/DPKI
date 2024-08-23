@@ -7,14 +7,21 @@ import requests
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 
-from utils import check_signature_belongs_to_certificate_valid, dict_to_bytes
-from utils import get_certificate_by_user, get_certificate_pubkey, update_certificate_status
+from utils import (
+    add_user_certificate,
+    check_signature_belongs_to_certificate_valid,
+    dict_to_bytes,
+    update_certificate_status
+)
+from db_handler import DB
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
 
 rollup_server = environ["ROLLUP_HTTP_SERVER_URL"]
 logger.info(f"HTTP rollup_server url is {rollup_server}")
+
+db = DB()
 
 
 def hex2str(hex):
@@ -69,6 +76,18 @@ def handle_advance(data):
 
             cert = x509.load_pem_x509_certificate(certificate)
             public_key = cert.public_key()
+            common_name = cert.subject.get_attributes_for_oid(
+                x509.oid.NameOID.COMMON_NAME
+            )[0].value
+            public_key_hex = public_key.public_bytes(
+                serialization.Encoding.PEM,
+                serialization.PublicFormat.SubjectPublicKeyInfo,
+            ).hex()
+            due_date = cert.not_valid_after_utc
+            due_date_str = (due_date.strftime("%Y-%m-%d %H:%M:%S"),)
+
+            if db.get_certificate_by_user(common_name):
+                raise Exception("Certificate with this Common Name already registered")
 
             # check certificate is valid
             if not check_signature_belongs_to_certificate_valid(
@@ -84,18 +103,17 @@ def handle_advance(data):
 
             logger.info("Valid input, creating data")
 
-            # TODO add to database
+            # add to database
+            if not add_user_certificate(db, common_name, cert):
+                raise Exception("Failed to add certificate to database")
 
             # set output to the blockchain
-            common_name = cert.subject.get_attributes_for_oid(
-                x509.oid.NameOID.COMMON_NAME
-            )[0].value
             output = {
                 "userId": common_name,
                 "certificate": certificate_hex,
-                "publicKey": cert.public_bytes(serialization.Encoding.PEM).hex(),
+                "publicKey": public_key_hex,
                 "active": True,
-                "dueDate": cert.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%S"),
+                "dueDate": due_date_str,
             }
         elif operation == "revoke":
             if "signature" not in input_json:
@@ -107,11 +125,10 @@ def handle_advance(data):
             signature = bytes.fromhex(signature_hex)
             
             user_id = input_json["name"]
-            user = get_certificate_by_user(user_id)
+            user = db.get_certificate_by_user(user_id)
             user_cert = user[1]
             
-            public_key = get_certificate_pubkey(user_cert)
-
+            public_key = user[3]
             message = dict_to_bytes(
                 {"operation": "revoke", "certificate": user_cert}
             )
@@ -122,6 +139,7 @@ def handle_advance(data):
             ):
                 raise Exception("Invalid signature")
             
+            # update certificate activity
             if not update_certificate_status(False, user_id):
                 raise Exception("Revoke Failed")
 
@@ -173,9 +191,16 @@ def handle_advance(data):
 def handle_inspect(data):
     logger.info(f"Received inspect request data {data}")
     logger.info("Adding report")
+
+    user_id = hex2str(data["payload"])
+    cert = db.get_certificate_by_user(user_id)
     response = requests.post(
-        rollup_server + "/report", json={"payload": data["payload"]}
+        rollup_server + "/report", json={"payload": "0x" + cert[1]}
     )
+
+    logger.info(f"response received from report {response}")
+    logger.info(f"response received from report {response.content}")
+
     logger.info(f"Received report status {response.status_code}")
     return "accept"
 
