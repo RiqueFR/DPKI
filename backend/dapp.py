@@ -127,8 +127,12 @@ def handle_advance(data):
             user_id = input_json["name"]
             user = db.get_certificate_by_user(user_id)
             user_cert = user[1]
+
+            certificate = bytes.fromhex(user_cert)
+            cert = x509.load_pem_x509_certificate(certificate)
             
-            public_key = user[3]
+            public_key = cert.public_key()
+            
             message = dict_to_bytes(
                 {"operation": "revoke", "certificate": user_cert}
             )
@@ -145,8 +149,6 @@ def handle_advance(data):
 
             logger.info("Revoked Certificate")
 
-            certificate = bytes.fromhex(user_cert)
-            cert = x509.load_pem_x509_certificate(certificate)
 
             # set output to the blockchain
             common_name = cert.subject.get_attributes_for_oid(
