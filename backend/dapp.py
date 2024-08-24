@@ -134,6 +134,10 @@ def handle_advance(data):
             if user is None:
                 raise Exception("User not found, unable to revoke key")
 
+            # certificate already revoked
+            if not user[2]:
+                raise Exception("Certificate already revoked")
+
             user_cert_hex = user[1]
 
             certificate = bytes.fromhex(user_cert_hex)
