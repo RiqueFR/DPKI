@@ -84,7 +84,7 @@ def handle_advance(data):
                 serialization.PublicFormat.SubjectPublicKeyInfo,
             ).hex()
             due_date = cert.not_valid_after_utc
-            due_date_str = (due_date.strftime("%Y-%m-%d %H:%M:%S"),)
+            due_date_str = due_date.strftime("%Y-%m-%d %H:%M:%S")
 
             if db.get_certificate_by_user(common_name):
                 raise Exception("Certificate with this Common Name already registered")
@@ -157,7 +157,7 @@ def handle_advance(data):
                 raise Exception("Invalid signature")
 
             # update certificate activity
-            if not update_certificate_status(False, user_id):
+            if not update_certificate_status(db, user_id, False):
                 raise Exception("Revoke Failed")
 
             logger.info("Revoked Certificate")
@@ -205,8 +205,16 @@ def handle_inspect(data):
 
     user_id = hex2str(data["payload"])
     cert = db.get_certificate_by_user(user_id)
+
+    output = {
+        "name": cert[0],
+        "certificate_hex": cert[1],
+        "status": "active" if cert[2] else "revoked",
+        "public_key_hex": cert[3],
+        "due_date": cert[4],
+    }
     response = requests.post(
-        rollup_server + "/report", json={"payload": "0x" + cert[1]}
+        rollup_server + "/report", json={"payload": "0x" + dict_to_bytes(output).hex()}
     )
 
     logger.info(f"response received from report {response}")

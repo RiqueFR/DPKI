@@ -41,7 +41,7 @@ class DB:
 
     def update_certificate_status(self, user_id: str, cert_new_status: bool):
         try:
-            sql = "UPDATE {self.TABLE_NAME} SET active = ? WHERE user_id = ?"
+            sql = f"UPDATE {self.TABLE_NAME} SET active = ? WHERE user_id = ?"
             self.cur.execute(sql, (cert_new_status, user_id))
             self.con.commit()
             return True
