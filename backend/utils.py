@@ -14,6 +14,11 @@ from db_handler import DB
 
 
 def add_user_certificate(db: DB, user_id: str, certificate: x509.Certificate):
+    """
+    Receives database, user_id, x509 certificate to prepare the other parameters for 
+    add the new user to the database.
+    Return True if user was correctly added, and False if not.
+    """
     public_key = certificate.public_key()
     public_key_hex = public_key.public_bytes(
         serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
@@ -24,6 +29,11 @@ def add_user_certificate(db: DB, user_id: str, certificate: x509.Certificate):
 
 
 def update_certificate_status(db: DB, user_id: str, cert_new_status: bool):
+    """
+    Receives database, user_id and certificate status for 
+    update new state of certificate of a user in database.
+    Return True if user was correctly updated, and False if not.
+    """
     return db.update_certificate_status(user_id, cert_new_status)
 
 

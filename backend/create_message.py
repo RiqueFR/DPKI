@@ -6,6 +6,11 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 from utils import dict_to_bytes, sign_message
 
+""" 
+Create a message to send on the blockchain 
+Only create and revoke operation supported!
+"""
+
 if len(sys.argv) != 4:
     print(
         """Usage: python create_message.py <private_key_path> <operation> <certificate_path/name>

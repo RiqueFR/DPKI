@@ -56,10 +56,12 @@ def handle_advance(data):
         operation = input_json["operation"]
 
         if operation == "create":
+            # check input json have certificate key
             if "certificate" not in input_json:
                 raise Exception(
                     "Bad formated json input, create operation require a certificate"
                 )
+            # check input json have signature key
             if "signature" not in input_json:
                 raise Exception(
                     "Bad formated json input, create operation require a signature"
@@ -86,6 +88,7 @@ def handle_advance(data):
             due_date = cert.not_valid_after_utc
             due_date_str = due_date.strftime("%Y-%m-%d %H:%M:%S")
 
+            # check if user is already in database
             if db.get_certificate_by_user(common_name):
                 raise Exception("Certificate with this Common Name already registered")
 
@@ -116,10 +119,12 @@ def handle_advance(data):
                 "dueDate": due_date_str,
             }
         elif operation == "revoke":
+            # check input json have signature key
             if "signature" not in input_json:
                 raise Exception(
                     "Bad formated json input, revoke operation require a signature"
                 )
+            # check input json have name key
             if "name" not in input_json:
                 raise Exception(
                     "Bad formated json input, revoke operation require a name"
@@ -131,6 +136,7 @@ def handle_advance(data):
             user_id = input_json["name"]
             user = db.get_certificate_by_user(user_id)
 
+            # check if user is in database
             if user is None:
                 raise Exception("User not found, unable to revoke key")
 
@@ -160,7 +166,7 @@ def handle_advance(data):
             ):
                 raise Exception("Invalid signature")
 
-            # update certificate activity
+            # update certificate state
             if not update_certificate_status(db, user_id, False):
                 raise Exception("Revoke Failed")
 
@@ -204,6 +210,9 @@ def handle_advance(data):
 
 
 def handle_inspect(data):
+    """
+    Consult user register.
+    """
     logger.info(f"Received inspect request data {data}")
     logger.info("Adding report")
 
