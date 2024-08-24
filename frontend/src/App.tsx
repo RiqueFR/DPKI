@@ -16,11 +16,8 @@ import { init } from "@web3-onboard/react";
 import { useState } from "react";
 
 import { GraphQLProvider } from "./GraphQL";
-import { Notices } from "./Notices";
-import { Input } from "./Input";
 import { Inspect } from "./Inspect";
 import { Network } from "./Network";
-import { Reports } from "./Reports";
 import configFile from "./config.json";
 
 const config: any = configFile;
@@ -56,12 +53,6 @@ const App: FC = () => {
                 </div>
                 <h2>Inspect</h2>
                 <Inspect />
-                <h2>Input</h2>
-                <Input dappAddress={dappAddress} />
-                <h2>Reports</h2>
-                <Reports />
-                <h2>Notices</h2>
-                <Notices />
             </GraphQLProvider>
         </div>
     );
