@@ -35,8 +35,8 @@ subject = issuer = x509.Name(
         x509.NameAttribute(NameOID.COUNTRY_NAME, "BR"),
         x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Espirito Santo"),
         x509.NameAttribute(NameOID.LOCALITY_NAME, "Serra"),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
-        x509.NameAttribute(NameOID.COMMON_NAME, "Test"),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Invalid"),
+        x509.NameAttribute(NameOID.COMMON_NAME, "Test Invalid"),
     ]
 )
 # create a certificate and sign it with other private key
